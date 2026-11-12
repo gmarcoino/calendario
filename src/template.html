@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#7a1f2b">
+<title>Calendario dell'Avvento</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,800&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root { --bg:#7a1f2b; --bg2:#5b1520; --gold:#e8c27a; --cream:#fbf3e4; --ink:#2b1a12; --green:#2f5d46; }
+  * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body { margin:0; min-height:100%; }
+  body {
+    font-family:Inter,system-ui,sans-serif; color:var(--cream);
+    background: radial-gradient(circle at 20% 10%, #9a2d3b 0, transparent 45%), linear-gradient(180deg,var(--bg),var(--bg2));
+    background-attachment:fixed; padding:20px 14px 40px;
+  }
+  .snow { position:fixed; inset:0; pointer-events:none; opacity:.35;
+    background-image:radial-gradient(#fff 1px,transparent 1.5px),radial-gradient(#fff 1px,transparent 1.5px);
+    background-size:46px 46px,80px 80px; background-position:0 0,23px 31px; }
+  header { text-align:center; margin:8px 0 18px; position:relative; }
+  h1 { font-family:Fraunces,serif; font-weight:800; font-size:clamp(28px,8vw,44px); margin:0; color:var(--gold); letter-spacing:.5px; }
+  .sub { margin:6px 0 0; font-size:15px; opacity:.85; }
+  .badge { display:inline-block; margin-top:10px; padding:4px 10px; border-radius:999px; background:var(--gold); color:var(--ink); font-size:12px; font-weight:600; }
+  .badge[hidden] { display:none; }
+  .grid { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; max-width:560px; margin:0 auto; position:relative; }
+  .door {
+    position:relative; aspect-ratio:1; border-radius:14px; border:2px solid rgba(232,194,122,.55);
+    background:linear-gradient(145deg,#3a6b52,var(--green)); color:var(--cream);
+    font-family:Fraunces,serif; font-size:clamp(22px,7vw,34px); font-weight:800;
+    display:flex; align-items:center; justify-content:center; flex-direction:column;
+    text-decoration:none; box-shadow:0 4px 0 rgba(0,0,0,.25); transition:transform .15s;
+  }
+  .door:nth-child(3n) { background:linear-gradient(145deg,#b23a48,#8e2a36); }
+  .door:nth-child(5n) { background:linear-gradient(145deg,#c99a4a,#a87a30); color:var(--ink); }
+  .door.open:active { transform:scale(.95); }
+  .door.open::after { content:'♪'; position:absolute; top:4px; right:8px; font-size:14px; color:var(--gold); }
+  .door.seen { opacity:.75; }
+  .door.seen::after { content:'✓'; }
+  .door.today { border-color:var(--gold); box-shadow:0 0 0 3px var(--gold),0 4px 0 rgba(0,0,0,.25); animation:pulse 1.8s ease-in-out infinite; }
+  @keyframes pulse { 50% { transform:scale(1.04); } }
+  .door.locked { filter:grayscale(.55) brightness(.7); cursor:not-allowed; }
+  .door .hint { font-family:Inter,sans-serif; font-size:10px; font-weight:600; margin-top:2px; opacity:.9; }
+  .toast { position:fixed; left:50%; bottom:22px; transform:translateX(-50%) translateY(120px); background:var(--cream); color:var(--ink);
+    padding:10px 16px; border-radius:12px; font-size:14px; box-shadow:0 6px 20px rgba(0,0,0,.3); transition:transform .25s; max-width:90vw; text-align:center; }
+  .toast.show { transform:translateX(-50%) translateY(0); }
+  footer { text-align:center; margin-top:22px; font-size:12px; opacity:.6; }
+  @media (prefers-reduced-motion:reduce) { .door.today { animation:none; } }
+</style>
+</head>
+<body>
+<div class="snow"></div>
+<header>
+  <h1>Calendario dell'Avvento</h1>
+  <p class="sub">Una canzone al giorno, fino a Natale ❤</p>
+  <span class="badge" id="badge" hidden>Anteprima: tutte aperte</span>
+  <span class="badge" id="testBadge" hidden>Versione di test</span>
+</header>
+<main class="grid" id="grid" aria-label="24 caselle"></main>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<footer>Tocca la casella di oggi</footer>
+
+<script>/*CALENDAR_JS*/</script>
+<script>/*SONGS_JS*/</script>
+<script>
+(function () {
+  var YEAR = /*YEAR*/2026;
+  var A = window.Advent;
+  var TEST_OPEN = /*TEST_OPEN*/[];
+  var preview = location.hash === '#anteprima';
+  var STORE = 'avvento-' + YEAR;
+  function loadSeen() { try { return JSON.parse(localStorage.getItem(STORE)) || {}; } catch (e) { return {}; } }
+  function saveSeen(s) { try { localStorage.setItem(STORE, JSON.stringify(s)); } catch (e) {} }
+
+  var toastEl = document.getElementById('toast'), toastTimer;
+  function toast(msg) {
+    toastEl.textContent = msg; toastEl.classList.add('show');
+    clearTimeout(toastTimer); toastTimer = setTimeout(function () { toastEl.classList.remove('show'); }, 2200);
+  }
+
+  function render() {
+    var now = new Date(), seen = loadSeen(), grid = document.getElementById('grid');
+    document.getElementById('badge').hidden = !preview;
+    document.getElementById('testBadge').hidden = TEST_OPEN.length === 0;
+    grid.innerHTML = '';
+    A.gridOrder().forEach(function (day) {
+      var song = SONGS[day - 1];
+      var open = preview || TEST_OPEN.indexOf(day) !== -1 || A.isUnlocked(day, now, YEAR);
+      var url = open ? A.songUrl(song) : null;
+      var el = document.createElement(url ? 'a' : 'div');
+      el.className = 'door';
+      el.textContent = day;
+      if (url) {
+        el.href = url; el.target = '_blank'; el.rel = 'noopener';
+        el.classList.add('open');
+        el.setAttribute('aria-label', 'Giorno ' + day + ': apri la canzone');
+        if (seen[day]) el.classList.add('seen');
+        el.addEventListener('click', function () { seen[day] = 1; saveSeen(seen); el.classList.add('seen'); });
+      } else {
+        el.classList.add('locked');
+        var hint = document.createElement('span');
+        hint.className = 'hint'; hint.textContent = A.lockedLabel(day, now, YEAR);
+        el.appendChild(hint);
+        el.setAttribute('role', 'button');
+        el.setAttribute('aria-label', 'Giorno ' + day + ': ancora chiusa');
+        el.addEventListener('click', function () { toast('Pazienza! La casella ' + day + ' si apre ' + A.dateText(day) + ' 🎄'); });
+      }
+      var t = new Date();
+      if (t.getFullYear() === YEAR && t.getMonth() === 11 && t.getDate() === day) el.classList.add('today');
+      grid.appendChild(el);
+    });
+  }
+  render();
+  // Se la pagina resta aperta oltre la mezzanotte, si aggiorna da sola.
+  setInterval(render, 60 * 1000);
+  document.addEventListener('visibilitychange', function () { if (!document.hidden) render(); });
+  window.addEventListener('hashchange', function () { preview = location.hash === '#anteprima'; render(); });
+})();
+</script>
+</body>
+</html>
