@@ -17,7 +17,7 @@ concurrency:
 env:
   # Caselle aperte subito per la versione di test (es. "1").
   # Vuoto = calendario vero.
-  TEST_OPEN: "1"
+  TEST_OPEN: ""
 
 jobs:
   test-and-build:
