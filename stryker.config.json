@@ -1,0 +1,9 @@
+{
+  "mutate": ["src/calendar.js"],
+  "testRunner": "command",
+  "commandRunner": { "command": "node --test test/calendar.test.js" },
+  "reporters": ["clear-text", "progress"],
+  "thresholds": { "high": 95, "low": 90, "break": 100 },
+  "coverageAnalysis": "off",
+  "tempDirName": ".stryker-tmp"
+}

@@ -1,0 +1,20 @@
+{
+  "name": "advent",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "TZ=Europe/Zurich node --test test/*.test.js",
+    "build": "node build.js",
+    "mutate": "TZ=Europe/Zurich stryker run",
+    "check": "npm test && npm run build && npm run mutate",
+    "watch": "TZ=Europe/Zurich node --test --watch test/*.test.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@stryker-mutator/core": "^10.1.1",
+    "jsdom": "^31.0.0"
+  }
+}
