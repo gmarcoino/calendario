@@ -1,0 +1,57 @@
+name: Test e pubblicazione
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+env:
+  # Caselle aperte subito per la versione di test (es. "1").
+  # Vuoto = calendario vero.
+  TEST_OPEN: "1"
+
+jobs:
+  test-and-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install --no-audit --no-fund
+      - name: Test (unità, negativi, pagina)
+        run: npm test
+      - name: Mutation testing (soglia 100%)
+        run: npm run mutate
+      - name: Build
+        run: |
+          mkdir -p _site
+          if [ -n "$TEST_OPEN" ]; then
+            node build.js --test $TEST_OPEN
+            cp dist/test.html _site/index.html
+          else
+            node build.js
+            cp dist/index.html _site/index.html
+          fi
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    needs: test-and-build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - id: deploy
+        uses: actions/deploy-pages@v4
